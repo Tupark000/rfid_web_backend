@@ -1,22 +1,78 @@
-<!-- public/dashboard.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Dashboard</title>
-  <link rel="stylesheet" href="/styles/style.css" />
+  <meta charset="UTF-8">
+  <title>RFID Dashboard</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body {
+      background-color: #f8d7da;
+      padding: 2rem;
+      font-family: 'Segoe UI', sans-serif;
+    }
+    .dashboard-title {
+      color: #b00020;
+      font-weight: bold;
+    }
+    .card {
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    .stat-label {
+      font-size: 1rem;
+      color: #b00020;
+    }
+    .stat-value {
+      font-size: 2.5rem;
+      font-weight: bold;
+    }
+  </style>
 </head>
 <body>
-  <h1>Welcome to the Dashboard</h1>
-  <p id="userRole"></p>
+  <div class="container">
+    <h1 class="dashboard-title mb-4">Welcome to the RFID Dashboard</h1>
+    <p id="userRole" class="mb-4"></p>
+
+    <div class="row g-4">
+      <div class="col-md-4">
+        <div class="card p-4 text-center">
+          <div class="stat-label">Total Guests</div>
+          <div id="totalGuests" class="stat-value">--</div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card p-4 text-center">
+          <div class="stat-label">Active Users</div>
+          <div id="activeUsers" class="stat-value">--</div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card p-4 text-center">
+          <div class="stat-label">Inactive Users</div>
+          <div id="inactiveUsers" class="stat-value">--</div>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <script>
-    const urlParams = new URLSearchParams(window.location.search);
-    const role = urlParams.get("role");
-
+    const BASE_URL = "https://rfidwebbackend-production.up.railway.app";
+    const role = new URLSearchParams(window.location.search).get("role");
     document.getElementById("userRole").textContent = `You are logged in as: ${role}`;
 
-    // In the future: show dashboard data depending on the role
+    async function loadDashboardStats() {
+      try {
+        const res = await fetch(`${BASE_URL}/api/dashboard`);
+        const data = await res.json();
+
+        document.getElementById("totalGuests").textContent = data.totalGuests;
+        document.getElementById("activeUsers").textContent = data.activeUsers;
+        document.getElementById("inactiveUsers").textContent = data.inactiveUsers;
+      } catch (err) {
+        console.error("Failed to load dashboard stats:", err);
+      }
+    }
+
+    loadDashboardStats();
   </script>
 </body>
 </html>

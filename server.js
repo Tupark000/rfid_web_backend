@@ -39,3 +39,17 @@ app.post('/api/login', (req, res) => {
   });
 });
 
+app.get('/api/dashboard', (req, res) => {
+  const query = `
+    SELECT 
+      COUNT(*) AS totalGuests,
+      SUM(CASE WHEN status = 'ACTIVE' THEN 1 ELSE 0 END) AS activeUsers,
+      SUM(CASE WHEN status = 'INACTIVE' THEN 1 ELSE 0 END) AS inactiveUsers
+    FROM users;
+  `;
+
+  db.query(query, (err, result) => {
+    if (err) return res.status(500).send('Database error');
+    res.json(result[0]);
+  });
+});
