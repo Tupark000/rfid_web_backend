@@ -1,0 +1,22 @@
+<!-- public/dashboard.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Dashboard</title>
+  <link rel="stylesheet" href="/styles/style.css" />
+</head>
+<body>
+  <h1>Welcome to the Dashboard</h1>
+  <p id="userRole"></p>
+
+  <script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const role = urlParams.get("role");
+
+    document.getElementById("userRole").textContent = `You are logged in as: ${role}`;
+
+    // In the future: show dashboard data depending on the role
+  </script>
+</body>
+</html>
