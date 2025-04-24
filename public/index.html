@@ -2,56 +2,39 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Login - RFID Web App</title>
-  <link rel="stylesheet" href="/styles/style.css" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>TUPARK System</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <style>
+    body {
+      background-color: #f8f9fa;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+    }
+    .card {
+      max-width: 400px;
+      border: none;
+      box-shadow: 0 0 15px rgba(0,0,0,0.1);
+    }
+    .btn-admin {
+      background-color: #b00020;
+      color: white;
+    }
+    .btn-admin:hover {
+      background-color: #a0001d;
+    }
+  </style>
 </head>
 <body>
-  <div class="login-container">
-    <h2>Admin Login</h2>
-    <form id="loginForm">
-      <input type="text" id="username" placeholder="Username" required />
-      <input type="password" id="password" placeholder="Password" required />
-      <button type="submit">Login</button>
-    </form>
-    <p id="errorMsg" style="color:red; margin-top:10px;"></p>
+  <div class="card text-center">
+    <div class="card-header bg-danger text-white fw-bold">TUPARK System</div>
+    <div class="card-body">
+      <p class="mb-4">Please select your login type:</p>
+      <a href="login.html?role=main" class="btn btn-admin mb-2 w-100">Login as Admin</a>
+      <a href="login.html?role=sub" class="btn btn-outline-secondary w-100">Login as Subadmin</a>
+    </div>
   </div>
-
-  <script>
-    const BASE_URL = "https://rfidwebbackend-production.up.railway.app";
-  
-    document.getElementById("loginForm").addEventListener("submit", async (e) => {
-      e.preventDefault();
-  
-      try {
-        const res = await fetch(`${BASE_URL}/api/login`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            username: document.getElementById("username").value,
-            password: document.getElementById("password").value,
-          }),
-        });
-  
-        if (res.ok) {
-          const data = await res.json();
-          console.log("✅ Login success", data);
-  
-          // Redirect based on role
-          if (data.role === "main") {
-            window.location.href = "dashboard.html?role=main";
-          } else {
-            window.location.href = "dashboard.html?role=admin";
-          }
-        } else {
-          console.log("❌ Login failed");
-          document.getElementById("errorMsg").textContent = "Invalid username or password.";
-        }
-      } catch (err) {
-        console.error("🔥 Login error:", err);
-        document.getElementById("errorMsg").textContent = "Server error. Try again.";
-      }
-    });
-  </script>
-  
 </body>
 </html>

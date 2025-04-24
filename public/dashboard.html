@@ -57,10 +57,12 @@
   <!-- Sidebar -->
   <div class="sidebar">
     <h3>TUPARK</h3>
-    <a href="dashboard.html">Dashboard</a>
-    <a href="present.html">Present Guests</a>
-    <a href="logs.html">Daily Logs</a>
-    <a href="index.html">Logout</a>
+    <ul class="nav flex-column">
+        <li class="nav-item"><a class="nav-link" href="dashboard.html">Dashboard</a></li>
+        <li class="nav-item"><a class="nav-link" href="present.html">Present Guests</a></li>
+        <li class="nav-item role-main-only"><a class="nav-link" href="logs.html">Daily Logs</a></li>
+      </ul>
+      
   </div>
 
   <!-- Main content -->
@@ -150,6 +152,13 @@
 
     loadStats();
     loadTable();
+
+    
+        const role = localStorage.getItem('userRole');
+        if (role !== 'main') {
+            document.querySelectorAll('.role-main-only').forEach(el => el.remove());
+        }
+
   </script>
 </body>
 </html>

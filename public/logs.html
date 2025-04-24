@@ -92,52 +92,30 @@
 
   <!-- Script -->
   <script>
-    const BASE_URL = "https://rfidwebbackend-production.up.railway.app";
-    const isMainAdmin = true; // Change this dynamically if needed
+            
+            const urlParams = new URLSearchParams(window.location.search);
+            const role = urlParams.get('role') || 'sub'; // default to sub if missing
 
-    async function loadLogs() {
-      const date = document.getElementById('logDate').value;
-      const res = await fetch(`${BASE_URL}/api/logs?date=${date}`);
-      const data = await res.json();
-      const table = document.getElementById("logsTable");
-      table.innerHTML = "";
+            document.getElementById('loginForm').addEventListener('submit', function (e) {
+                e.preventDefault();
+                const email = document.getElementById('username').value;
+                const password = document.getElementById('password').value;
 
-      data.forEach(user => {
-        const timeIn = new Date(user.time_in).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        const timeOut = user.time_out ? new Date(user.time_out).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "-";
-
-        table.innerHTML += `
-          <tr>
-            <td>${user.name}</td>
-            <td>${user.status}</td>
-            <td>${user.plate_number}</td>
-            <td>${user.rfid_uid}</td>
-            <td>${timeIn}</td>
-            <td>${timeOut}</td>
-            <td class="no-print">
-              ${isMainAdmin ? `
-                <button class="btn btn-warning btn-sm me-2" onclick="editLog(${user.id})">Edit</button>
-                <button class="btn btn-danger btn-sm" onclick="deleteLog(${user.id})">Delete</button>
-              ` : `-`}
-            </td>
-          </tr>
-        `;
-      });
-    }
-
-    async function deleteLog(id) {
-      if (!confirm("Are you sure you want to delete this record?")) return;
-      const res = await fetch(`${BASE_URL}/api/logs/${id}`, { method: 'DELETE' });
-      if (res.ok) loadLogs();
-      else alert("Delete failed.");
-    }
-
-    function editLog(id) {
-      alert("Edit not implemented yet.");
-    }
-
-    // Initial load
-    loadLogs();
+                fetch('/login', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ email, password, role })
+                })
+                .then(res => res.json())
+                .then(data => {
+                if (data.success) {
+                    localStorage.setItem('userRole', role);
+                    window.location.href = 'dashboard.html';
+                } else {
+                    alert(data.message || 'Invalid credentials');
+                }
+                });
+            });
   </script>
 </body>
 </html>
