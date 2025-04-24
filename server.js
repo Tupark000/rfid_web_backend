@@ -10,6 +10,61 @@ app.use(cors());
 app.use(bodyParser.json());
 app.use(express.static('public')); // Serves public HTML files
 
+const mysql = require('mysql2');
+const path = require('path');
+
+// Middleware
+app.use(express.static('public'));
+app.use(bodyParser.urlencoded({ extended: true }));
+app.use(bodyParser.json());
+
+// MySQL connection
+const db = mysql.createConnection({
+  host: process.env.DB_HOST,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
+  port: process.env.DB_PORT
+});
+
+db.connect((err) => {
+  if (err) {
+    console.error('❌ Error connecting to MySQL:', err);
+    return;
+  }
+  console.log('✅ Connected to MySQL Database');
+});
+
+// Main Admin Login Route
+app.post('/login', (req, res) => {
+  const { email, password, role } = req.body;
+
+  const query = 'SELECT * FROM admins WHERE email = ? AND password = ?';
+  db.query(query, [email, password], (err, results) => {
+    if (err) return res.send('Database error');
+
+    if (results.length > 0) {
+      // Save role in a cookie or session if needed
+      if (role === 'main') {
+        res.redirect(`/dashboard.html?role=main`);
+      } else {
+        res.redirect(`/dashboard.html?role=admin`);
+      }
+    } else {
+      res.send('Invalid email or password');
+    }
+  });
+});
+
+
+
+
+
+
+
+
+
+
 // Test route
 app.get('/', (req, res) => {
   res.sendFile(__dirname + '/public/index.html');
