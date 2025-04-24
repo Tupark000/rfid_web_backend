@@ -10,8 +10,6 @@ app.use(cors());
 app.use(bodyParser.json());
 app.use(express.static('public')); // Serves public HTML files
 
-const mysql = require('mysql2');
-const path = require('path');
 
 // Middleware
 app.use(express.static('public'));
