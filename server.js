@@ -23,7 +23,7 @@ app.listen(PORT, () => {
 
 app.post('/api/login', (req, res) => {
   const { username, password } = req.body;
-  const query = 'SELECT * FROM admins WHERE username = ? AND password = ?';
+  const query = 'SELECT * FROM admins WHERE email = ? AND password = ?';
 
   db.query(query, [username, password], (err, result) => {
     if (err) {
@@ -32,9 +32,10 @@ app.post('/api/login', (req, res) => {
     }
 
     if (result.length > 0) {
-      res.json({ success: true, role: result[0].role }); // 'admin' or 'main'
+      res.json({ success: true, role: result[0].role });
     } else {
       res.status(401).send('Invalid credentials');
     }
   });
 });
+

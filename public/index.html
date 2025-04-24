@@ -17,31 +17,41 @@
   </div>
 
   <script>
-    const BASE_URL = "https://rfid-web-backend.up.railway.app"; // Replace with your backend's actual Railway domain
-
+    const BASE_URL = "https://rfidwebbackend-production.up.railway.app";
+  
     document.getElementById("loginForm").addEventListener("submit", async (e) => {
       e.preventDefault();
-
-      const res = await fetch(`${BASE_URL}/api/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          username: document.getElementById("username").value,
-          password: document.getElementById("password").value,
-        }),
-      });
-
-      if (res.ok) {
-        const data = await res.json();
-        if (data.role === "main") {
-          window.location.href = "dashboard.html?role=main";
+  
+      try {
+        const res = await fetch(`${BASE_URL}/api/login`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            username: document.getElementById("username").value,
+            password: document.getElementById("password").value,
+          }),
+        });
+  
+        if (res.ok) {
+          const data = await res.json();
+          console.log("✅ Login success", data);
+  
+          // Redirect based on role
+          if (data.role === "main") {
+            window.location.href = "dashboard.html?role=main";
+          } else {
+            window.location.href = "dashboard.html?role=admin";
+          }
         } else {
-          window.location.href = "dashboard.html?role=admin";
+          console.log("❌ Login failed");
+          document.getElementById("errorMsg").textContent = "Invalid username or password.";
         }
-      } else {
-        document.getElementById("errorMsg").textContent = "Invalid username or password.";
+      } catch (err) {
+        console.error("🔥 Login error:", err);
+        document.getElementById("errorMsg").textContent = "Server error. Try again.";
       }
     });
   </script>
+  
 </body>
 </html>
