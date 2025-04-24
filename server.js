@@ -82,21 +82,25 @@ app.get('/api/present', (req, res) => {
 app.get('/api/logs', (req, res) => {
   const selectedDate = req.query.date;
 
-  let query = `SELECT * FROM users WHERE 1`;
+  let query = `SELECT * FROM users`;
   let params = [];
 
   if (selectedDate) {
-    query += ` AND DATE(time_in) = ?`;
+    query += ` WHERE DATE(time_in) = ?`;
     params.push(selectedDate);
   }
 
   query += ` ORDER BY time_in DESC`;
 
   db.query(query, params, (err, results) => {
-    if (err) return res.status(500).send("Error loading logs");
+    if (err) {
+      console.error(err);
+      return res.status(500).send("Error loading logs");
+    }
     res.json(results);
   });
 });
+
 
 app.delete('/api/logs/:id', (req, res) => {
   const { id } = req.params;
