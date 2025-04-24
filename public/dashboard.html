@@ -2,77 +2,154 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>RFID Dashboard</title>
+  <title>TUPARK | Dashboard</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <style>
     body {
-      background-color: #f8d7da;
-      padding: 2rem;
+      margin: 0;
       font-family: 'Segoe UI', sans-serif;
     }
-    .dashboard-title {
-      color: #b00020;
-      font-weight: bold;
+    .sidebar {
+      width: 250px;
+      background-color: #b00020;
+      color: white;
+      height: 100vh;
+      position: fixed;
+      padding: 1.5rem;
     }
-    .card {
-      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    .sidebar h3 {
+      font-weight: bold;
+      margin-bottom: 2rem;
+    }
+    .sidebar a {
+      color: white;
+      text-decoration: none;
+      display: block;
+      margin: 1rem 0;
+    }
+    .sidebar a:hover {
+      text-decoration: underline;
+    }
+    .content {
+      margin-left: 250px;
+      padding: 2rem;
+      background: #f8f9fa;
+    }
+    .stat-card {
+      background: white;
+      border-radius: 8px;
+      padding: 1.5rem;
+      text-align: center;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+    }
+    .stat-value {
+      font-size: 2rem;
+      font-weight: bold;
     }
     .stat-label {
       font-size: 1rem;
       color: #b00020;
     }
-    .stat-value {
-      font-size: 2.5rem;
-      font-weight: bold;
-    }
   </style>
 </head>
 <body>
-  <div class="container">
-    <h1 class="dashboard-title mb-4">Welcome to the RFID Dashboard</h1>
-    <p id="userRole" class="mb-4"></p>
 
-    <div class="row g-4">
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <h3>TUPARK</h3>
+    <a href="dashboard.html">Dashboard</a>
+    <a href="present.html">Present Guests</a>
+    <a href="logs.html">Daily Logs</a>
+    <a href="index.html">Logout</a>
+  </div>
+
+  <!-- Main content -->
+  <div class="content">
+    <h2>Welcome!</h2>
+
+    <div class="row my-4 g-4">
       <div class="col-md-4">
-        <div class="card p-4 text-center">
-          <div class="stat-label">Total Guests</div>
-          <div id="totalGuests" class="stat-value">--</div>
+        <div class="stat-card">
+          <div class="stat-value" id="totalGuests">--</div>
+          <div class="stat-label">Total Guests Today</div>
         </div>
       </div>
       <div class="col-md-4">
-        <div class="card p-4 text-center">
-          <div class="stat-label">Active Users</div>
-          <div id="activeUsers" class="stat-value">--</div>
+        <div class="stat-card">
+          <div class="stat-value" id="activeUsers">--</div>
+          <div class="stat-label">Active Entries</div>
         </div>
       </div>
       <div class="col-md-4">
-        <div class="card p-4 text-center">
-          <div class="stat-label">Inactive Users</div>
-          <div id="inactiveUsers" class="stat-value">--</div>
+        <div class="stat-card">
+          <div class="stat-value" id="inactiveUsers">--</div>
+          <div class="stat-label">Exited Vehicles</div>
         </div>
+      </div>
+    </div>
+
+    <!-- Table -->
+    <div class="card p-3">
+      <h5 class="mb-3">Latest Activity</h5>
+      <div class="table-responsive">
+        <table class="table table-bordered table-hover text-center">
+          <thead class="table-light">
+            <tr>
+              <th>Name</th>
+              <th>Status</th>
+              <th>Plate Number</th>
+              <th>RFID UID</th>
+              <th>Time In</th>
+              <th>Time Out</th>
+            </tr>
+          </thead>
+          <tbody id="activityTableBody">
+            <!-- Fetched rows will go here -->
+          </tbody>
+        </table>
       </div>
     </div>
   </div>
 
+  <!-- JavaScript -->
   <script>
     const BASE_URL = "https://rfidwebbackend-production.up.railway.app";
-    const role = new URLSearchParams(window.location.search).get("role");
-    document.getElementById("userRole").textContent = `You are logged in as: ${role}`;
 
-    async function loadDashboardStats() {
-      try {
-        const res = await fetch(`${BASE_URL}/api/dashboard`);
-        const data = await res.json();
+    async function loadStats() {
+      const res = await fetch(`${BASE_URL}/api/dashboard`);
+      const data = await res.json();
 
-        document.getElementById("totalGuests").textContent = data.totalGuests;
-        document.getElementById("activeUsers").textContent = data.activeUsers;
-        document.getElementById("inactiveUsers").textContent = data.inactiveUsers;
-      } catch (err) {
-        console.error("Failed to load dashboard stats:", err);
-      }
+      document.getElementById("totalGuests").textContent = data.totalGuests;
+      document.getElementById("activeUsers").textContent = data.activeUsers;
+      document.getElementById("inactiveUsers").textContent = data.inactiveUsers;
     }
 
-    loadDashboardStats();
+    async function loadTable() {
+      const res = await fetch(`${BASE_URL}/api/users`);
+      const rows = await res.json();
+      const table = document.getElementById("activityTableBody");
+
+      table.innerHTML = "";
+
+      rows.forEach(row => {
+        const timeIn = new Date(row.time_in).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        const timeOut = row.time_out ? new Date(row.time_out).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '-';
+
+        table.innerHTML += `
+          <tr>
+            <td>${row.name}</td>
+            <td>${row.status.toLowerCase()}</td>
+            <td>${row.plate_number}</td>
+            <td>${row.rfid_uid}</td>
+            <td>${timeIn}</td>
+            <td>${timeOut}</td>
+          </tr>
+        `;
+      });
+    }
+
+    loadStats();
+    loadTable();
   </script>
 </body>
 </html>

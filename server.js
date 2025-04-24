@@ -39,17 +39,27 @@ app.post('/api/login', (req, res) => {
   });
 });
 
+// Dashboard Summary API
 app.get('/api/dashboard', (req, res) => {
   const query = `
     SELECT 
       COUNT(*) AS totalGuests,
       SUM(CASE WHEN status = 'ACTIVE' THEN 1 ELSE 0 END) AS activeUsers,
       SUM(CASE WHEN status = 'INACTIVE' THEN 1 ELSE 0 END) AS inactiveUsers
-    FROM users;
+    FROM users
+    WHERE DATE(time_in) = CURDATE();
   `;
+  db.query(query, (err, results) => {
+    if (err) return res.status(500).send("Database error");
+    res.json(results[0]);
+  });
+});
 
-  db.query(query, (err, result) => {
-    if (err) return res.status(500).send('Database error');
-    res.json(result[0]);
+// Latest Users API
+app.get('/api/users', (req, res) => {
+  const query = `SELECT * FROM users ORDER BY time_in DESC`;
+  db.query(query, (err, results) => {
+    if (err) return res.status(500).send("Database error");
+    res.json(results);
   });
 });
