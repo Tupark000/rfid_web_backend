@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Login - RFID Web App</title>
+  <link rel="stylesheet" href="/styles/style.css" />
+</head>
+<body>
+  <div class="login-container">
+    <h2>Admin Login</h2>
+    <form id="loginForm">
+      <input type="text" id="username" placeholder="Username" required />
+      <input type="password" id="password" placeholder="Password" required />
+      <button type="submit">Login</button>
+    </form>
+    <p id="errorMsg" style="color:red; margin-top:10px;"></p>
+  </div>
+
+  <script>
+    const BASE_URL = "https://rfid-web-backend.up.railway.app"; // Replace with your backend's actual Railway domain
+
+    document.getElementById("loginForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const res = await fetch(`${BASE_URL}/api/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          username: document.getElementById("username").value,
+          password: document.getElementById("password").value,
+        }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data.role === "main") {
+          window.location.href = "dashboard.html?role=main";
+        } else {
+          window.location.href = "dashboard.html?role=admin";
+        }
+      } else {
+        document.getElementById("errorMsg").textContent = "Invalid username or password.";
+      }
+    });
+  </script>
+</body>
+</html>
