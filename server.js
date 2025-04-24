@@ -99,7 +99,7 @@ app.get('/api/logs', (req, res) => {
     }
     res.json(results);
   });
-});
+}); 
 
 
 app.delete('/api/logs/:id', (req, res) => {
