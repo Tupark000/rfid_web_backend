@@ -63,3 +63,47 @@ app.get('/api/users', (req, res) => {
     res.json(results);
   });
 });
+
+// Get Present (ACTIVE) Guests
+app.get('/api/present', (req, res) => {
+  const query = `
+    SELECT * FROM users 
+    WHERE status = 'ACTIVE' 
+    AND DATE(time_in) = CURDATE()
+    ORDER BY time_in DESC;
+  `;
+  db.query(query, (err, results) => {
+    if (err) return res.status(500).send("Database error");
+    res.json(results);
+  });
+});
+
+// Get daily logs filtered by date (optional)
+app.get('/api/logs', (req, res) => {
+  const selectedDate = req.query.date;
+
+  let query = `SELECT * FROM users WHERE 1`;
+  let params = [];
+
+  if (selectedDate) {
+    query += ` AND DATE(time_in) = ?`;
+    params.push(selectedDate);
+  }
+
+  query += ` ORDER BY time_in DESC`;
+
+  db.query(query, params, (err, results) => {
+    if (err) return res.status(500).send("Error loading logs");
+    res.json(results);
+  });
+});
+
+app.delete('/api/logs/:id', (req, res) => {
+  const { id } = req.params;
+  const query = `DELETE FROM users WHERE id = ?`;
+
+  db.query(query, [id], (err, result) => {
+    if (err) return res.status(500).send("Delete failed");
+    res.sendStatus(200);
+  });
+});
