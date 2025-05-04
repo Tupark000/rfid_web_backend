@@ -1,4 +1,3 @@
-<!-- dashboard.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -34,7 +33,6 @@
 
   <div class="content">
     <h2>Welcome!</h2>
-
     <div class="row my-4 g-4">
       <div class="col-md-4">
         <div class="stat-card">
@@ -67,50 +65,4 @@
           </thead>
           <tbody id="activityTableBody"></tbody>
         </table>
-      </div>
-    </div>
-  </div>
-
-  <script>
-    const BASE_URL = "https://rfidwebbackend-production.up.railway.app";
-
-    async function loadStats() {
-      const res = await fetch(`${BASE_URL}/api/dashboard`);
-      const data = await res.json();
-      document.getElementById("totalGuests").textContent = data.totalGuests || 0;
-      document.getElementById("activeUsers").textContent = data.activeUsers || 0;
-      document.getElementById("inactiveUsers").textContent = data.inactiveUsers || 0;
-    }
-
-    async function loadTable() {
-      const res = await fetch(`${BASE_URL}/api/users`);
-      const rows = await res.json();
-      const table = document.getElementById("activityTableBody");
-      table.innerHTML = "";
-
-      rows.forEach(row => {
-        const timeIn = new Date(row.time_in).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        const timeOut = row.time_out ? new Date(row.time_out).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '-';
-        table.innerHTML += `
-          <tr>
-            <td>${row.name}</td>
-            <td>${row.status}</td>
-            <td>${row.plate_number}</td>
-            <td>${row.rfid_uid}</td>
-            <td>${timeIn}</td>
-            <td>${timeOut}</td>
-          </tr>`;
-      });
-    }
-
-    // Hide Logs Link if not main admin
-    const role = new URLSearchParams(window.location.search).get("role");
-    if (role !== "main") {
-      document.getElementById("logsLink").style.display = "none";
-    }
-
-    loadStats();
-    loadTable();
-  </script>
-</body>
-</html>
+      </div
