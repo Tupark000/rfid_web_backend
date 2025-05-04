@@ -1,42 +1,69 @@
-// server.js
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
-const db = require('./db');
 const path = require('path');
-require('dotenv').config();
+const db = require('./db');
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 8080;
 
 app.use(cors());
 app.use(bodyParser.json());
-app.use(express.static('public')); // Serve HTML from /public
 app.use(express.urlencoded({ extended: true }));
 
-// === ROUTES ===
+// Serve static files from "public" directory
+app.use(express.static(path.join(__dirname, 'public')));
 
-// Home page
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public/index.html'));
+// ==========================
+// LOGIN (Role-based)
+// ==========================
+app.post('/login', (req, res) => {
+  const { email, password, role } = req.body;
+
+  const query = 'SELECT * FROM admins WHERE email = ? AND password = ?';
+  db.query(query, [email, password], (err, results) => {
+    if (err) {
+      console.error('Login error:', err);
+      return res.status(500).send('Database error');
+    }
+
+    if (results.length > 0) {
+      if (role === 'main') {
+        res.redirect(`/dashboard.html?role=main`);
+      } else {
+        res.redirect(`/dashboard.html?role=admin`);
+      }
+    } else {
+      res.status(401).send('Invalid email or password');
+    }
+  });
 });
 
-// Login API (for form submission)
+// ==========================
+// API: Login via JS Fetch
+// ==========================
 app.post('/api/login', (req, res) => {
   const { username, password } = req.body;
   const query = 'SELECT * FROM admins WHERE email = ? AND password = ?';
 
   db.query(query, [username, password], (err, result) => {
-    if (err) return res.status(500).send('Database error');
+    if (err) {
+      console.error('Login API error:', err);
+      return res.status(500).send('Server error');
+    }
+
     if (result.length > 0) {
-      return res.json({ success: true, role: result[0].role });
+      res.json({ success: true, role: result[0].role });
     } else {
-      return res.status(401).send('Invalid credentials');
+      res.status(401).send('Invalid credentials');
     }
   });
 });
 
-// Dashboard summary
+// ==========================
+// API: Dashboard Summary
+// ==========================
 app.get('/api/dashboard', (req, res) => {
   const query = `
     SELECT 
@@ -46,40 +73,47 @@ app.get('/api/dashboard', (req, res) => {
     FROM users
     WHERE DATE(time_in) = CURDATE();
   `;
-  db.query(query, (err, result) => {
+
+  db.query(query, (err, results) => {
     if (err) return res.status(500).send("Database error");
-    res.json(result[0]);
+    res.json(results[0]);
   });
 });
 
-// All users for dashboard table
+// ==========================
+// API: All Users (Latest Activity Table)
+// ==========================
 app.get('/api/users', (req, res) => {
   const query = `SELECT * FROM users ORDER BY time_in DESC`;
-  db.query(query, (err, result) => {
+  db.query(query, (err, results) => {
     if (err) return res.status(500).send("Database error");
-    res.json(result);
+    res.json(results);
   });
 });
 
-// Present guests (active today)
+// ==========================
+// API: Present Guests (ACTIVE)
+// ==========================
 app.get('/api/present', (req, res) => {
   const query = `
-    SELECT * FROM users
-    WHERE status = 'ACTIVE'
+    SELECT * FROM users 
+    WHERE status = 'ACTIVE' 
     AND DATE(time_in) = CURDATE()
     ORDER BY time_in DESC;
   `;
-  db.query(query, (err, result) => {
+  db.query(query, (err, results) => {
     if (err) return res.status(500).send("Database error");
-    res.json(result);
+    res.json(results);
   });
 });
 
-// Logs filtered by date (optional)
+// ==========================
+// API: Daily Logs
+// ==========================
 app.get('/api/logs', (req, res) => {
   const selectedDate = req.query.date;
   let query = `SELECT * FROM users`;
-  const params = [];
+  let params = [];
 
   if (selectedDate) {
     query += ` WHERE DATE(time_in) = ?`;
@@ -88,28 +122,38 @@ app.get('/api/logs', (req, res) => {
 
   query += ` ORDER BY time_in DESC`;
 
-  db.query(query, params, (err, result) => {
-    if (err) return res.status(500).send("Error loading logs");
-    res.json(result);
+  db.query(query, params, (err, results) => {
+    if (err) {
+      console.error(err);
+      return res.status(500).send("Error loading logs");
+    }
+    res.json(results);
   });
 });
 
-// Delete log by ID
+// ==========================
+// API: Delete Log by ID
+// ==========================
 app.delete('/api/logs/:id', (req, res) => {
   const { id } = req.params;
   const query = `DELETE FROM users WHERE id = ?`;
-  db.query(query, [id], (err) => {
+
+  db.query(query, [id], (err, result) => {
     if (err) return res.status(500).send("Delete failed");
     res.sendStatus(200);
   });
 });
 
-// Fallback for unknown routes
-app.use((req, res) => {
-  res.status(404).send("Not Found");
+// ==========================
+// Root Route (index.html)
+// ==========================
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// Start server
-app.listen(PORT, () => {
-  console.log(`🚀 Server running at http://localhost:${PORT}`);
+// ==========================
+// Start Server (IMPORTANT: Listen on 0.0.0.0)
+// ==========================
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`🚀 Server running at http://0.0.0.0:${PORT}`);
 });
