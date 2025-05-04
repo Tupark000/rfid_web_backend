@@ -4,25 +4,58 @@
   <meta charset="UTF-8">
   <title>TUPARK | Dashboard</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/socket.io-client/dist/socket.io.min.js"></script>
   <style>
-    body { margin: 0; font-family: 'Segoe UI', sans-serif; }
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+    }
     .sidebar {
-      width: 250px; background-color: #b00020; color: white;
-      height: 100vh; position: fixed; padding: 1.5rem;
+      width: 250px;
+      background-color: #b00020;
+      color: white;
+      height: 100vh;
+      position: fixed;
+      padding: 1.5rem;
     }
-    .sidebar h3 { font-weight: bold; margin-bottom: 2rem; }
-    .sidebar a { color: white; text-decoration: none; display: block; margin: 1rem 0; }
-    .sidebar a:hover { text-decoration: underline; }
-    .content { margin-left: 250px; padding: 2rem; background: #f8f9fa; }
+    .sidebar h3 {
+      font-weight: bold;
+      margin-bottom: 2rem;
+    }
+    .sidebar a {
+      color: white;
+      text-decoration: none;
+      display: block;
+      margin: 1rem 0;
+    }
+    .sidebar a:hover {
+      text-decoration: underline;
+    }
+    .content {
+      margin-left: 250px;
+      padding: 2rem;
+      background: #f8f9fa;
+    }
     .stat-card {
-      background: white; border-radius: 8px; padding: 1.5rem;
-      text-align: center; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+      background: white;
+      border-radius: 8px;
+      padding: 1.5rem;
+      text-align: center;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
     }
-    .stat-value { font-size: 2rem; font-weight: bold; }
-    .stat-label { font-size: 1rem; color: #b00020; }
+    .stat-value {
+      font-size: 2rem;
+      font-weight: bold;
+    }
+    .stat-label {
+      font-size: 1rem;
+      color: #b00020;
+    }
   </style>
 </head>
 <body>
+
+  <!-- Sidebar -->
   <div class="sidebar">
     <h3>TUPARK</h3>
     <a href="dashboard.html">Dashboard</a>
@@ -31,8 +64,10 @@
     <a href="index.html">Logout</a>
   </div>
 
+  <!-- Main content -->
   <div class="content">
     <h2>Welcome!</h2>
+
     <div class="row my-4 g-4">
       <div class="col-md-4">
         <div class="stat-card">
@@ -54,15 +89,86 @@
       </div>
     </div>
 
+    <!-- Activity Table -->
     <div class="card p-3">
       <h5 class="mb-3">Latest Activity</h5>
       <div class="table-responsive">
         <table class="table table-bordered table-hover text-center">
           <thead class="table-light">
             <tr>
-              <th>Name</th><th>Status</th><th>Plate Number</th><th>RFID UID</th><th>Time In</th><th>Time Out</th>
+              <th>Name</th>
+              <th>Status</th>
+              <th>Plate Number</th>
+              <th>RFID UID</th>
+              <th>Time In</th>
+              <th>Time Out</th>
             </tr>
           </thead>
           <tbody id="activityTableBody"></tbody>
         </table>
-      </div
+      </div>
+    </div>
+  </div>
+
+  <!-- JavaScript -->
+  <script>
+    const BASE_URL = "https://rfidwebbackend-production.up.railway.app";
+    const socket = io(BASE_URL);
+
+    const role = new URLSearchParams(window.location.search).get("role");
+    if (role !== "main") {
+      document.getElementById("logsLink").style.display = "none";
+    }
+
+    async function loadStats() {
+      try {
+        const res = await fetch(`${BASE_URL}/api/dashboard`);
+        const data = await res.json();
+        document.getElementById("totalGuests").textContent = data.totalGuests || 0;
+        document.getElementById("activeUsers").textContent = data.activeUsers || 0;
+        document.getElementById("inactiveUsers").textContent = data.inactiveUsers || 0;
+      } catch (error) {
+        console.error("Error loading dashboard stats:", error);
+      }
+    }
+
+    async function loadTable() {
+      try {
+        const res = await fetch(`${BASE_URL}/api/users`);
+        const users = await res.json();
+        const table = document.getElementById("activityTableBody");
+        table.innerHTML = "";
+
+        users.forEach(row => {
+          const timeIn = new Date(row.time_in).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+          const timeOut = row.time_out ? new Date(row.time_out).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "-";
+
+          table.innerHTML += `
+            <tr>
+              <td>${row.name}</td>
+              <td>${row.status}</td>
+              <td>${row.plate_number}</td>
+              <td>${row.rfid_uid}</td>
+              <td>${timeIn}</td>
+              <td>${timeOut}</td>
+            </tr>`;
+        });
+      } catch (error) {
+        console.error("Error loading activity table:", error);
+      }
+    }
+
+    // Auto reload on WebSocket push
+    socket.on("log_update", () => {
+      loadStats();
+      loadTable();
+    });
+
+    // Initial load
+    window.onload = () => {
+      loadStats();
+      loadTable();
+    };
+  </script>
+</body>
+</html>
