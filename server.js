@@ -1,67 +1,43 @@
-require("dotenv").config();
-const express = require("express");
-const expressWs = require("express-ws");
-const cors = require("cors");
-const bodyParser = require("body-parser");
-const mysql = require("mysql2");
+// server.js
+const express = require('express');
+const cors = require('cors');
+const bodyParser = require('body-parser');
+const db = require('./db');
+const path = require('path');
+require('dotenv').config();
 
 const app = express();
-expressWs(app); // Enable WebSocket
 const PORT = process.env.PORT || 5000;
 
-// MySQL Connection
-const db = mysql.createConnection({
-  host: process.env.DB_HOST || "localhost",
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_NAME || "TUPARK",
-});
-
-// Middleware
 app.use(cors());
-app.use(express.json());
 app.use(bodyParser.json());
+app.use(express.static('public')); // Serve HTML from /public
 app.use(express.urlencoded({ extended: true }));
-app.use(express.static("public"));
 
-// === WebSocket Clients List ===
-const clients = new Set();
-app.ws("/ws", (ws) => {
-  clients.add(ws);
-  ws.on("close", () => clients.delete(ws));
+// === ROUTES ===
+
+// Home page
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public/index.html'));
 });
 
-// === Broadcast Helper ===
-function broadcast(data) {
-  clients.forEach((client) => {
-    if (client.readyState === 1) {
-      client.send(JSON.stringify(data));
-    }
-  });
-}
+// Login API (for form submission)
+app.post('/api/login', (req, res) => {
+  const { username, password } = req.body;
+  const query = 'SELECT * FROM admins WHERE email = ? AND password = ?';
 
-// === LOGIN ROUTE ===
-app.post("/login", (req, res) => {
-  const { email, password, role } = req.body;
-
-  if (!email || !password) {
-    return res.status(400).send("Missing credentials");
-  }
-
-  const query = `SELECT * FROM admins WHERE email = ? AND password = ?`;
-  db.query(query, [email, password], (err, results) => {
-    if (err) return res.status(500).send("Database error");
-
-    if (results.length > 0) {
-      res.json({ success: true, role: role === "main" ? "main" : "admin" });
+  db.query(query, [username, password], (err, result) => {
+    if (err) return res.status(500).send('Database error');
+    if (result.length > 0) {
+      return res.json({ success: true, role: result[0].role });
     } else {
-      res.status(401).send("Invalid email or password");
+      return res.status(401).send('Invalid credentials');
     }
   });
 });
 
-// === DASHBOARD SUMMARY ===
-app.get("/api/dashboard", (req, res) => {
+// Dashboard summary
+app.get('/api/dashboard', (req, res) => {
   const query = `
     SELECT 
       COUNT(*) AS totalGuests,
@@ -70,39 +46,40 @@ app.get("/api/dashboard", (req, res) => {
     FROM users
     WHERE DATE(time_in) = CURDATE();
   `;
-  db.query(query, (err, results) => {
+  db.query(query, (err, result) => {
     if (err) return res.status(500).send("Database error");
-    res.json(results[0]);
+    res.json(result[0]);
   });
 });
 
-// === FETCH ALL USERS ===
-app.get("/api/users", (req, res) => {
+// All users for dashboard table
+app.get('/api/users', (req, res) => {
   const query = `SELECT * FROM users ORDER BY time_in DESC`;
-  db.query(query, (err, results) => {
+  db.query(query, (err, result) => {
     if (err) return res.status(500).send("Database error");
-    res.json(results);
+    res.json(result);
   });
 });
 
-// === FETCH PRESENT USERS (ACTIVE TODAY) ===
-app.get("/api/present", (req, res) => {
+// Present guests (active today)
+app.get('/api/present', (req, res) => {
   const query = `
     SELECT * FROM users
-    WHERE status = 'ACTIVE' AND DATE(time_in) = CURDATE()
+    WHERE status = 'ACTIVE'
+    AND DATE(time_in) = CURDATE()
     ORDER BY time_in DESC;
   `;
-  db.query(query, (err, results) => {
+  db.query(query, (err, result) => {
     if (err) return res.status(500).send("Database error");
-    res.json(results);
+    res.json(result);
   });
 });
 
-// === FETCH DAILY LOGS (FILTERED) ===
-app.get("/api/logs", (req, res) => {
+// Logs filtered by date (optional)
+app.get('/api/logs', (req, res) => {
   const selectedDate = req.query.date;
   let query = `SELECT * FROM users`;
-  let params = [];
+  const params = [];
 
   if (selectedDate) {
     query += ` WHERE DATE(time_in) = ?`;
@@ -111,48 +88,28 @@ app.get("/api/logs", (req, res) => {
 
   query += ` ORDER BY time_in DESC`;
 
-  db.query(query, params, (err, results) => {
+  db.query(query, params, (err, result) => {
     if (err) return res.status(500).send("Error loading logs");
-    res.json(results);
+    res.json(result);
   });
 });
 
-// === DELETE LOG BY ID ===
-app.delete("/api/logs/:id", (req, res) => {
+// Delete log by ID
+app.delete('/api/logs/:id', (req, res) => {
   const { id } = req.params;
   const query = `DELETE FROM users WHERE id = ?`;
-
-  db.query(query, [id], (err, result) => {
+  db.query(query, [id], (err) => {
     if (err) return res.status(500).send("Delete failed");
-    broadcast({ action: "delete", id }); // Notify clients
     res.sendStatus(200);
   });
 });
 
-// === EDIT LOG BY ID ===
-app.put("/api/logs/:id", (req, res) => {
-  const { id } = req.params;
-  const { name, plate_number, rfid_uid, time_in, time_out } = req.body;
-
-  const query = `
-    UPDATE users 
-    SET name = ?, plate_number = ?, rfid_uid = ?, time_in = ?, time_out = ? 
-    WHERE id = ?
-  `;
-
-  db.query(query, [name, plate_number, rfid_uid, time_in, time_out, id], (err) => {
-    if (err) return res.status(500).send("Update failed");
-    broadcast({ action: "update", id });
-    res.sendStatus(200);
-  });
+// Fallback for unknown routes
+app.use((req, res) => {
+  res.status(404).send("Not Found");
 });
 
-// === HOME ===
-app.get("/", (req, res) => {
-  res.sendFile(__dirname + "/public/index.html");
-});
-
-// === START SERVER ===
+// Start server
 app.listen(PORT, () => {
-  console.log(`✅ Server running at http://localhost:${PORT}`);
+  console.log(`🚀 Server running at http://localhost:${PORT}`);
 });
