@@ -8,13 +8,22 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "description": "",
   "dependencies": {
     "body-parse": "^0.1.0",
+    "body-parser": "^2.2.0",
     "cors": "^2.8.5",
     "dotenv": "^16.5.0",
     "express": "^5.1.0",
     "express-ws": "^5.0.2",
-    "mysql2": "^3.14.0"
-  }
+    "mysql2": "^3.14.1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Tupark000/rfid_web_backend.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Tupark000/rfid_web_backend/issues"
+  },
+  "homepage": "https://github.com/Tupark000/rfid_web_backend#readme",
+  "description": ""
 }
